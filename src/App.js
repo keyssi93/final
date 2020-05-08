@@ -226,7 +226,7 @@ class Hotel extends React.Component {
       <div className="card">
       <div className="card-image">
       <figure className="image is-4by3">
-      <img src={data.photo} alt="foto" />
+      <img src={data.photo} alt={data.name} />
       </figure>
       </div>
 

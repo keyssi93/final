@@ -1,60 +1,71 @@
 import React from 'react';
 import './App.css';
 import  './data.js';
-import {today,hotelsData} from './data.js';
+//import {today,hotelsData} from './data.js';
 import moment from 'moment';
+import  { Fragment } from "react";
 
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       filters: {
-        dateFrom: today, 
-        dateTo: new Date(today.valueOf() + 86400000),
-        country: '',
-        price: '',
-        rooms: ''
+        dateFrom: moment(new Date()).format("YYYY-MM-DD"),
+        dateTo: moment()
+          .add(1, "month")
+          .format("YYYY-MM-DD"),
+        country: "select",
+        price: "select",
+        rooms: "select"
       },
-      hotels: hotelsData
+      hotels: [],
+      filteredHotels: [],
+      isAllLoaded: false
     };
-    
-    this.handleFilterChange = this.handleFilterChange.bind(this)
-    this.filterHotels = this.filterHotels.bind(this)
+this.handleFilterChange = this.handleFilterChange.bind(this);
   }
-
-  handleFilterChange(payload) {
-    this.setState({
-      filters: payload
+  componentDidMount() {
+    fetch('https://wt-8a099f3e7c73b2d17f4e018b6cfd6131-0.sandbox.auth0-extend.com/acamica')
+            .then(hotels => hotels.json())
+            .then(hotels => this.setState({ hotels: hotels, isAllLoaded: true, filteredHotels: hotels }))
+            .catch(() => console.log('Error en la petición...'));
+  }
+  
+filterHotels(filters,hotels) {
+    const { dateFrom, dateTo, country, price, rooms} = filters;
+    console.log(filters)
+    console.log(hotels)
+    return hotels.filter(hotel => {
+      return moment(hotel.availabilityFrom).format("YYYY-MM-DD") >= dateFrom &&
+             moment(hotel.availabilityTo).format("YYYY-MM-DD") <= dateTo &&
+             hotel.rooms <= (rooms !== "select" ? rooms : hotel.rooms) &&
+             hotel.price <=(price !== "select" ? parseInt(price) : hotel.price) &&
+             hotel.country.trim().toLowerCase() === (country !== "select" ? country.trim().toLowerCase() : hotel.country.trim().toLowerCase())
     })
   }
 
-  filterHotels(hotel) {
-    const { filters } = this.state;
-    if ((filters.dateFrom && moment(filters.dateFrom).isBefore(hotel.availabilityFrom))
-      || (filters.dateTo && moment(filters.dateTo).isAfter(hotel.availabilityTo))
-      || (filters.country && filters.country !== hotel.country)
-      || (filters.price && filters.price !== hotel.price)
-      || (filters.rooms === 10 && hotel.rooms > 10)
-      || (filters.rooms === 20 && (hotel.rooms <= 10 || hotel.rooms > 20))
-      || (filters.rooms === 30 && hotel.rooms <= 20)) return false;
-
-    return true;
+  handleFilterChange(payload) {
+    const newFilteredHotels = this.filterHotels(payload,this.state.hotels);
+    console.log(newFilteredHotels);
+    this.setState({
+      filters: payload,
+      filteredHotels: newFilteredHotels
+    });
   }
-
   render() {
-
+    console.log('API de Hoteles: ', this.state.hotels)
     return (
-      <div>
+      <Fragment>
         <Hero filters={ this.state.filters } />
         <Filters
           filters={ this.state.filters }
           onFilterChange={ this.handleFilterChange }
         />
-        <Hotels data={this.state.hotels.filter(this.filterHotels)} />      
-      </div>
-    )
+        <Hotels data={this.filteredHotels} /> 
+      </Fragment>
+    );
   }
-  }
+}
 class Hero extends React.Component {
   render(){
   const formato = {weekday: "long",
@@ -274,16 +285,17 @@ class Hotel extends React.Component {
 class Hotels extends React.Component {
  
   render(){
-  
+    const {data}=this.props;
+
   return (
     <section className="section" style={ {marginTop: '3em'} }>
-      {this.props.data.length 
+      {data
         ? (
           <div className="container">
           <div className="columns is-multiline">
-            {this.props.data.map(hotels => (
-              <div key={ hotels.slug } className="column is-one-third">
-              <Hotel data={ hotels } />
+            {data.map(hotel => (
+              <div key={ hotel.slug } className="column is-one-third">
+              <Hotel data={ hotel } />
               </div>
             ))}
         </div>

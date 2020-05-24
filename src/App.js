@@ -1,9 +1,8 @@
-import React from 'react';
 import './App.css';
 import  './data.js';
 //import {today,hotelsData} from './data.js';
 import moment from 'moment';
-import  { Fragment } from "react";
+import React, { Fragment } from "react";
 
 class App extends React.Component {
   constructor(props) {
@@ -22,27 +21,34 @@ class App extends React.Component {
       filteredHotels: [],
       isAllLoaded: false
     };
-this.handleFilterChange = this.handleFilterChange.bind(this);
-  }
-  componentDidMount() {
-    fetch('https://wt-8a099f3e7c73b2d17f4e018b6cfd6131-0.sandbox.auth0-extend.com/acamica')
-            .then(hotels => hotels.json())
-            .then(hotels => this.setState({ hotels: hotels, isAllLoaded: true, filteredHotels: hotels }))
-            .catch(() => console.log('Error en la petición...'));
+    this.handleFilterChange = this.handleFilterChange.bind(this);
   }
   
-filterHotels(filters,hotels) {
+  componentDidMount() {
+    fetch('https://wt-8a099f3e7c73b2d17f4e018b6cfd6131-0.sandbox.auth0-extend.com/acamica')
+            .then(hoteles => hoteles.json())
+            .then(hoteles => this.setState({ hoteles: hoteles, isAllLoaded: true, filteredHotels: hoteles }))
+            .catch(() => console.log('Error en la petición...'));
+  }
+  warning() {
+    return (
+      <article className="message is-warning">
+        <div className="message-body">
+          No se han encontrado hoteles con los criterios definidos
+        </div>
+      </article>
+    );
+  }
+filterHotels(filters,hotel) {
     const { dateFrom, dateTo, country, price, rooms} = filters;
-    console.log(filters)
-    console.log(hotels)
-    return hotels.filter(hotel => {
-      return moment(hotel.availabilityFrom).format("YYYY-MM-DD") >= dateFrom &&
+    
+    if( moment(hotel.availabilityFrom).format("YYYY-MM-DD") >= dateFrom &&
              moment(hotel.availabilityTo).format("YYYY-MM-DD") <= dateTo &&
              hotel.rooms <= (rooms !== "select" ? rooms : hotel.rooms) &&
              hotel.price <=(price !== "select" ? parseInt(price) : hotel.price) &&
              hotel.country.trim().toLowerCase() === (country !== "select" ? country.trim().toLowerCase() : hotel.country.trim().toLowerCase())
-    })
-  }
+    )return false;
+    return true;}
 
   handleFilterChange(payload) {
     const newFilteredHotels = this.filterHotels(payload,this.state.hotels);
@@ -51,17 +57,20 @@ filterHotels(filters,hotels) {
       filters: payload,
       filteredHotels: newFilteredHotels
     });
+  
   }
+
   render() {
-    console.log('API de Hoteles: ', this.state.hotels)
+    console.log('API de Hoteles: ', this.state.hoteles)
     return (
       <Fragment>
-        <Hero filters={ this.state.filters } />
-        <Filters
-          filters={ this.state.filters }
-          onFilterChange={ this.handleFilterChange }
-        />
-        <Hotels data={this.filteredHotels} /> 
+        <Hero filters={this.state.filters} />
+        <Filters filters={this.state.filters} onFilterChange={this.handleFilterChange} />
+        {this.state.isAllLoaded ? (
+          <Hotels data={this.state.hoteles.filter(this.filterHotels)} />
+        ) : (
+          this.warning()
+        )}
       </Fragment>
     );
   }
@@ -285,30 +294,22 @@ class Hotel extends React.Component {
 class Hotels extends React.Component {
  
   render(){
-    const {data}=this.props;
-
+  const{data}=this.props;
   return (
+
     <section className="section" style={ {marginTop: '3em'} }>
-      {data
-        ? (
           <div className="container">
           <div className="columns is-multiline">
-            {data.map(hotel => (
+            {
+            data.map((hotel) => {
+              return(
               <div key={ hotel.slug } className="column is-one-third">
-              <Hotel data={ hotel } />
+              <Hotel  data={ hotel } />
               </div>
-            ))}
+            )}
+            )}
         </div>
       </div>
-        )
-        : (
-          <article className="message is-warning">
-          <div className="message-body">
-          No se han encontrado hoteles que coincidan con los parámetros de búsqueda.
-          </div>
-          </article>
-          ) 
-      }
     </section>
   )
   }

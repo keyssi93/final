@@ -18,16 +18,22 @@ class App extends React.Component {
         rooms: "select"
       },
       hotels: [],
-      filteredHotels: [],
       isAllLoaded: false
     };
-    this.handleFilterChange = this.handleFilterChange.bind(this);
+    this.handleFilterChange = this.handleFilterChange.bind(this)
+    this.filterHotels = this.filterHotels.bind(this)
+  }
+
+   handleFilterChange(payload) {
+    this.setState({
+      filters: payload
+    })
   }
   
   componentDidMount() {
     fetch('https://wt-8a099f3e7c73b2d17f4e018b6cfd6131-0.sandbox.auth0-extend.com/acamica')
-            .then(hoteles => hoteles.json())
-            .then(hoteles => this.setState({ hoteles: hoteles, isAllLoaded: true, filteredHotels: hoteles }))
+            .then(hotels => hotels.json())
+            .then(hotels => this.setState({ hotels: hotels, isAllLoaded: true, filteredHotels: hotels }))
             .catch(() => console.log('Error en la petición...'));
   }
   warning() {
@@ -39,35 +45,27 @@ class App extends React.Component {
       </article>
     );
   }
-filterHotels(filters,hotel) {
+filterHotels(hotels,filters) {
     const { dateFrom, dateTo, country, price, rooms} = filters;
     
-    if( moment(hotel.availabilityFrom).format("YYYY-MM-DD") >= dateFrom &&
-             moment(hotel.availabilityTo).format("YYYY-MM-DD") <= dateTo &&
-             hotel.rooms <= (rooms !== "select" ? rooms : hotel.rooms) &&
-             hotel.price <=(price !== "select" ? parseInt(price) : hotel.price) &&
-             hotel.country.trim().toLowerCase() === (country !== "select" ? country.trim().toLowerCase() : hotel.country.trim().toLowerCase())
+    if( moment(hotels.availabilityFrom).format("YYYY-MM-DD") >= dateFrom &&
+             moment(hotels.availabilityTo).format("YYYY-MM-DD") <= dateTo &&
+             hotels.rooms <= (rooms !== "selected" ? rooms : hotels.rooms) &&
+             hotels.price <=(price !== "selected" ? parseInt(price) : hotels.price) &&
+             hotels.country.trim().toLowerCase() === (country !== "selected" ? country.trim().toLowerCase() : hotels.country.trim().toLowerCase())
     )return false;
     return true;}
 
-  handleFilterChange(payload) {
-    const newFilteredHotels = this.filterHotels(payload,this.state.hotels);
-    console.log(newFilteredHotels);
-    this.setState({
-      filters: payload,
-      filteredHotels: newFilteredHotels
-    });
-  
-  }
+ 
 
   render() {
-    console.log('API de Hoteles: ', this.state.hoteles)
+    console.log('API de Hoteles: ', this.state.hotels)
     return (
       <Fragment>
         <Hero filters={this.state.filters} />
         <Filters filters={this.state.filters} onFilterChange={this.handleFilterChange} />
         {this.state.isAllLoaded ? (
-          <Hotels data={this.state.hoteles.filter(this.filterHotels)} />
+          <Hotels data={this.state.hotels.filter(this.filterHotels)} />
         ) : (
           this.warning()
         )}
